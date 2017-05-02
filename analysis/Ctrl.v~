@@ -1,0 +1,1288 @@
+/* */
+
+module Ctrl(/*AUTOARG*/
+	    //Inputs
+	    i_data,i_val,
+	    //Outputs
+	    estimate,o_val,clk,xrst,r_loop
+	    );
+   input [383:0] i_data;//雑音の付加されたデータ
+   input 	     i_val;//入力のvalid信号
+   output [11:0] estimate;//推定結果
+   output 		   o_val;//出力のvalid信号
+   input 		   clk;//クロック信号
+   input 		   xrst;//リセット信号
+   output reg [6:0] 	      r_loop;//繰り返し回数レジスタ
+
+   //ステート情報
+   parameter zStateInit=0;
+   parameter zStateRow=1;
+   parameter zStateColumn=2;
+   
+   reg [2:0] r_state;//ステートレジスタ
+   
+   reg signed [31:0]  r_alpha [23:0];//αレジスタ
+   reg signed [31:0] 	r_beta [23:0];//βレジスタ
+   wire signed [31:0] w_lambda [11:0];//λワイア
+   
+   reg [100:0] 			 r_counter;// カウンタ
+   
+   reg [2:0] 			 i_init_row;//行処理の初期化信号
+   reg [2:0] 			 i_init_column;//列処理の初期化信号
+   
+   wire 			 parity;//パリティビット
+   
+   wire [31:0]   w_i_data_row,w_i_data_column;//行処理，列処理それぞれの入力信号
+   wire [31:0]   w_o_data_column,w_o_data_row;//行処理，列処理の出力信号
+   reg 			   r_i_val_row,r_i_val_column;//行処理，列処理の入力のvalid信号
+   wire 		   w_o_val_row,w_o_val_column;//行処理，列処理の出力のvalid信号
+   wire 		   w_trans_row,w_trans_column;//行処理，列処理の状態遷移
+   wire [31:0] 	   w_lambda_beta[23:0];//βの初期値設定用信号
+  
+
+   /
+   //ステートが初期値のときvalid信号をうけたら，行処理にステートを移す
+   assign w_trans_row = (r_state==zStateInit & i_val);
+
+   //ステートが行処理かつカウンタが行処理の最後の処理かつ行処理の出力valid信号が１のときステートを列処理に移す
+   assign w_trans_column = (r_state == zStateRow) & (r_counter == 74) & w_o_val_row;
+
+   //カウンタにあわせてβを行処理モジュールに入れる
+   assign w_i_data_row =	
+			/**/
+			(r_counter == 0) ? r_beta[1]:
+			/**/
+			(r_counter == 1) ? r_beta[2]:
+			/**/
+			(r_counter == 2) ? r_beta[3]:
+			/**/
+			(r_counter == 3) ? r_beta[0]:
+			/**/
+			(r_counter == 4) ? r_beta[2]:
+			/**/
+			(r_counter == 5) ? r_beta[3]:
+			/**/
+			(r_counter == 6) ? r_beta[0]:
+			/**/
+			(r_counter == 7) ? r_beta[1]:
+			/**/
+			(r_counter == 8) ? r_beta[3]:
+			/**/
+			(r_counter == 9) ? r_beta[0]:
+			/**/
+			(r_counter == 10) ? r_beta[1]:
+			/**/
+			(r_counter == 11) ? r_beta[2]:
+			/**/
+			(r_counter == 12) ? r_beta[5]:
+			/**/
+			(r_counter == 13) ? r_beta[6]:
+			/**/
+			(r_counter == 14) ? r_beta[7]:
+			/**/
+			(r_counter == 15) ? r_beta[4]:
+			/**/
+			(r_counter == 16) ? r_beta[6]:
+			/**/
+			(r_counter == 17) ? r_beta[7]:
+			/**/
+			(r_counter == 18) ? r_beta[4]:
+			/**/
+			(r_counter == 19) ? r_beta[5]:
+			/**/
+			(r_counter == 20) ? r_beta[7]:
+			/**/
+			(r_counter == 21) ? r_beta[4]:
+			/**/
+			(r_counter == 22) ? r_beta[5]:
+			/**/
+			(r_counter == 23) ? r_beta[6]:
+			/**/
+			(r_counter == 24) ? r_beta[9]:
+			/**/
+			(r_counter == 25) ? r_beta[10]:
+			/**/
+			(r_counter == 26) ? r_beta[11]:
+			/**/
+			(r_counter == 27) ? r_beta[8]:
+			/**/
+			(r_counter == 28) ? r_beta[10]:
+			/**/
+			(r_counter == 29) ? r_beta[11]:
+			/**/
+			(r_counter == 30) ? r_beta[8]:
+			/**/
+			(r_counter == 31) ? r_beta[9]:
+			/**/
+			(r_counter == 32) ? r_beta[11]:
+			/**/
+			(r_counter == 33) ? r_beta[8]:
+			/**/
+			(r_counter == 34) ? r_beta[9]:
+			/**/
+			(r_counter == 35) ? r_beta[10]:
+			/**/
+			(r_counter == 36) ? r_beta[13]:
+			/**/
+			(r_counter == 37) ? r_beta[14]:
+			/**/
+			(r_counter == 38) ? r_beta[15]:
+			/**/
+			(r_counter == 39) ? r_beta[12]:
+			/**/
+			(r_counter == 40) ? r_beta[14]:
+			/**/
+			(r_counter == 41) ? r_beta[15]:
+			/**/
+			(r_counter == 42) ? r_beta[12]:
+			/**/
+			(r_counter == 43) ? r_beta[13]:
+			/**/
+			(r_counter == 44) ? r_beta[15]:
+			/**/
+			(r_counter == 45) ? r_beta[12]:
+			/**/
+			(r_counter == 46) ? r_beta[13]:
+			/**/
+			(r_counter == 47) ? r_beta[14]:
+			/**/
+			(r_counter == 48) ? r_beta[17]:
+			/**/
+			(r_counter == 49) ? r_beta[18]:
+			/**/
+			(r_counter == 50) ? r_beta[19]:
+			/**/
+			(r_counter == 51) ? r_beta[16]:
+			/**/
+			(r_counter == 52) ? r_beta[18]:
+			/**/
+			(r_counter == 53) ? r_beta[19]:
+			/**/
+			(r_counter == 54) ? r_beta[16]:
+			/**/
+			(r_counter == 55) ? r_beta[17]:
+			/**/
+			(r_counter == 56) ? r_beta[19]:
+			/**/
+			(r_counter == 57) ? r_beta[16]:
+			/**/
+			(r_counter == 58) ? r_beta[17]:
+			/**/
+			(r_counter == 59) ? r_beta[18]:
+			/**/
+			(r_counter == 60) ? r_beta[21]:
+			/**/
+			(r_counter == 61) ? r_beta[22]:
+			/**/
+			(r_counter == 62) ? r_beta[23]:
+			/**/
+			(r_counter == 63) ? r_beta[20]:
+			/**/
+			(r_counter == 64) ? r_beta[22]:
+			/**/
+			(r_counter == 65) ? r_beta[23]:
+			/**/
+			(r_counter == 66) ? r_beta[20]:
+			/**/
+			(r_counter == 67) ? r_beta[21]:
+			/**/
+			(r_counter == 68) ? r_beta[23]:
+			/**/
+			(r_counter == 69) ? r_beta[20]:
+			/**/
+			(r_counter == 70) ? r_beta[21]:
+			/**/
+			(r_counter == 71) ? r_beta[22]:
+			/**/
+			0;
+
+   //カウンタにあわせてαまたはλを列処理に入れる
+   assign w_i_data_column =
+			   /**/
+			   /**/
+			   (r_counter == 0 ) ? r_alpha[16]:
+				       /**/
+				       /**/
+			   /**/ 
+			   (r_counter == 1 ) ? w_lambda[3]:
+			   /**/
+				       /**/
+			   /**/
+			   (r_counter == 2 ) ? r_alpha[14]:
+				       /**/
+				       /**/
+			   /**/ 
+			   (r_counter == 3 ) ? w_lambda[7]:
+			   /**/
+				       /**/
+			   /**/
+			   (r_counter == 4 ) ? r_alpha[18]:
+				       /**/
+				       /**/
+			   /**/ 
+			   (r_counter == 5 ) ? w_lambda[8]:
+			   /**/
+				       /**/
+			   /**/
+			   (r_counter == 6 ) ? r_alpha[23]:
+				       /**/
+				       /**/
+			   /**/ 
+			   (r_counter == 7 ) ? w_lambda[9]:
+			   /**/
+				       /**/
+			   /**/
+			   (r_counter == 8 ) ? r_alpha[20]:
+				       /**/
+				       /**/
+			   /**/ 
+			   (r_counter == 9 ) ? w_lambda[0]:
+			   /**/
+				       /**/
+			   /**/
+			   (r_counter == 10 ) ? r_alpha[12]:
+				       /**/
+				       /**/
+			   /**/ 
+			   (r_counter == 11 ) ? w_lambda[1]:
+			   /**/
+				       /**/
+			   /**/
+			   (r_counter == 12 ) ? r_alpha[21]:
+				       /**/
+				       /**/
+			   /**/ 
+			   (r_counter == 13 ) ? w_lambda[2]:
+			   /**/
+				       /**/
+			   /**/
+			   (r_counter == 14 ) ? r_alpha[15]:
+				       /**/
+				       /**/
+			   /**/ 
+			   (r_counter == 15 ) ? w_lambda[10]:
+			   /**/
+				       /**/
+			   /**/
+			   (r_counter == 16 ) ? r_alpha[17]:
+				       /**/
+				       /**/
+			   /**/ 
+			   (r_counter == 17 ) ? w_lambda[4]:
+			   /**/
+				       /**/
+			   /**/
+			   (r_counter == 18 ) ? r_alpha[13]:
+				       /**/
+				       /**/
+			   /**/ 
+			   (r_counter == 19 ) ? w_lambda[5]:
+			   /**/
+				       /**/
+			   /**/
+			   (r_counter == 20 ) ? r_alpha[22]:
+				       /**/
+				       /**/
+			   /**/ 
+			   (r_counter == 21 ) ? w_lambda[6]:
+			   /**/
+				       /**/
+			   /**/
+			   (r_counter == 22 ) ? r_alpha[19]:
+				       /**/
+				       /**/
+			   /**/ 
+			   (r_counter == 23 ) ? w_lambda[11]:
+			   /**/
+				       /**/
+			   /**/
+			   (r_counter == 24 ) ? r_alpha[5]:
+				       /**/
+				       /**/
+			   /**/ 
+			   (r_counter == 25 ) ? w_lambda[1]:
+			   /**/
+				       /**/
+			   /**/
+			   (r_counter == 26 ) ? r_alpha[9]:
+				       /**/
+				       /**/
+			   /**/ 
+			   (r_counter == 27 ) ? w_lambda[5]:
+			   /**/
+				       /**/
+			   /**/
+			   (r_counter == 28 ) ? r_alpha[1]:
+				       /**/
+				       /**/
+			   /**/ 
+			   (r_counter == 29 ) ? w_lambda[7]:
+			   /**/
+				       /**/
+			   /**/
+			   (r_counter == 30 ) ? r_alpha[7]:
+				       /**/
+				       /**/
+			   /**/ 
+			   (r_counter == 31 ) ? w_lambda[10]:
+			   /**/
+				       /**/
+			   /**/
+			   (r_counter == 32 ) ? r_alpha[0]:
+				       /**/
+				       /**/
+			   /**/ 
+			   (r_counter == 33 ) ? w_lambda[3]:
+			   /**/
+				       /**/
+			   /**/
+			   (r_counter == 34 ) ? r_alpha[8]:
+				       /**/
+				       /**/
+			   /**/ 
+			   (r_counter == 35 ) ? w_lambda[4]:
+			   /**/
+				       /**/
+			   /**/
+			   (r_counter == 36 ) ? r_alpha[2]:
+				       /**/
+				       /**/
+			   /**/ 
+			   (r_counter == 37 ) ? w_lambda[8]:
+			   /**/
+				       /**/
+			   /**/
+			   (r_counter == 38 ) ? r_alpha[11]:
+				       /**/
+				       /**/
+			   /**/ 
+			   (r_counter == 39 ) ? w_lambda[11]:
+			   /**/
+				       /**/
+			   /**/
+			   (r_counter == 40 ) ? r_alpha[4]:
+				       /**/
+				       /**/
+			   /**/ 
+			   (r_counter == 41 ) ? w_lambda[0]:
+			   /**/
+				       /**/
+			   /**/
+			   (r_counter == 42 ) ? r_alpha[6]:
+				       /**/
+				       /**/
+			   /**/ 
+			   (r_counter == 43 ) ? w_lambda[2]:
+			   /**/
+				       /**/
+			   /**/
+			   (r_counter == 44 ) ? r_alpha[10]:
+				       /**/
+				       /**/
+			   /**/ 
+			   (r_counter == 45 ) ? w_lambda[6]:
+			   /**/
+				       /**/
+			   /**/
+			   (r_counter == 46 ) ? r_alpha[3]:
+				       /**/
+				       /**/
+			   /**/ 
+			   (r_counter == 47 ) ? w_lambda[9]:
+			   /**/
+				       /**/
+			   0;
+
+   //入力データからλをつくる
+   /**/
+   assign w_lambda[0]=i_data[31:0];
+   /**/
+   assign w_lambda[1]=i_data[63:32];
+   /**/
+   assign w_lambda[2]=i_data[95:64];
+   /**/
+   assign w_lambda[3]=i_data[127:96];
+   /**/
+   assign w_lambda[4]=i_data[159:128];
+   /**/
+   assign w_lambda[5]=i_data[191:160];
+   /**/
+   assign w_lambda[6]=i_data[223:192];
+   /**/
+   assign w_lambda[7]=i_data[255:224];
+   /**/
+   assign w_lambda[8]=i_data[287:256];
+   /**/
+   assign w_lambda[9]=i_data[319:288];
+   /**/
+   assign w_lambda[10]=i_data[351:320];
+   /**/
+   assign w_lambda[11]=i_data[383:352];
+   /**/
+
+   //βの初期化
+   /**/
+   assign w_lambda_beta[0]=w_lambda[3];
+   /**/
+   assign w_lambda_beta[1]=w_lambda[7];
+   /**/
+   assign w_lambda_beta[2]=w_lambda[8];
+   /**/
+   assign w_lambda_beta[3]=w_lambda[9];
+   /**/
+   assign w_lambda_beta[4]=w_lambda[0];
+   /**/
+   assign w_lambda_beta[5]=w_lambda[1];
+   /**/
+   assign w_lambda_beta[6]=w_lambda[2];
+   /**/
+   assign w_lambda_beta[7]=w_lambda[10];
+   /**/
+   assign w_lambda_beta[8]=w_lambda[4];
+   /**/
+   assign w_lambda_beta[9]=w_lambda[5];
+   /**/
+   assign w_lambda_beta[10]=w_lambda[6];
+   /**/
+   assign w_lambda_beta[11]=w_lambda[11];
+   /**/
+   assign w_lambda_beta[12]=w_lambda[1];
+   /**/
+   assign w_lambda_beta[13]=w_lambda[5];
+   /**/
+   assign w_lambda_beta[14]=w_lambda[7];
+   /**/
+   assign w_lambda_beta[15]=w_lambda[10];
+   /**/
+   assign w_lambda_beta[16]=w_lambda[3];
+   /**/
+   assign w_lambda_beta[17]=w_lambda[4];
+   /**/
+   assign w_lambda_beta[18]=w_lambda[8];
+   /**/
+   assign w_lambda_beta[19]=w_lambda[11];
+   /**/
+   assign w_lambda_beta[20]=w_lambda[0];
+   /**/
+   assign w_lambda_beta[21]=w_lambda[2];
+   /**/
+   assign w_lambda_beta[22]=w_lambda[6];
+   /**/
+   assign w_lambda_beta[23]=w_lambda[9];
+   /**/
+
+   /*パリティビットを計算
+    行を取り出し，検査行列を1が立っている列の推定結果の和を
+    だして，すべての列の積をとる
+    */ 
+   assign parity=  /**/
+		   ((
+		     /**/
+		     estimate[3]+
+	             /**/
+		     estimate[7]+
+	             /**/
+		     estimate[8]+
+	             /**/
+       		     estimate[9]) ==0) &&
+		   /**/
+		   ((
+		     /**/
+		     estimate[0]+
+	             /**/
+		     estimate[1]+
+	             /**/
+		     estimate[2]+
+	             /**/
+       		     estimate[10]) ==0) &&
+		   /**/
+		   ((
+		     /**/
+		     estimate[4]+
+	             /**/
+		     estimate[5]+
+	             /**/
+		     estimate[6]+
+	             /**/
+       		     estimate[11]) ==0) &&
+		   /**/
+		   ((
+		     /**/
+		     estimate[1]+
+	             /**/
+		     estimate[5]+
+	             /**/
+		     estimate[7]+
+	             /**/
+       		     estimate[10]) ==0) &&
+		   /**/
+		   ((
+		     /**/
+		     estimate[3]+
+	             /**/
+		     estimate[4]+
+	             /**/
+		     estimate[8]+
+	             /**/
+       		     estimate[11]) ==0) &&
+		   /**/
+		   ((
+		     /**/
+		     estimate[0]+
+		     /**/
+		     estimate[2]+
+		     /**/
+		     estimate[6]+
+		     /**/
+		     estimate[9]) ==0);
+
+   /*    推定結果を計算
+    列を取り出し，検査行列で1が立っている行のαとその列のλの和をとり，
+    0より大きければ0，小さければ1とする
+        */
+   /**/
+   assign estimate[11] = ((
+		      /**/	       
+		      r_alpha[4]+
+		      /**/	       
+		      r_alpha[20]+
+		      /**/
+		      w_lambda[0])>0) ? 0:1;
+   /**/
+   assign estimate[10] = ((
+		      /**/	       
+		      r_alpha[5]+
+		      /**/	       
+		      r_alpha[12]+
+		      /**/
+		      w_lambda[1])>0) ? 0:1;
+   /**/
+   assign estimate[9] = ((
+		      /**/	       
+		      r_alpha[6]+
+		      /**/	       
+		      r_alpha[21]+
+		      /**/
+		      w_lambda[2])>0) ? 0:1;
+   /**/
+   assign estimate[8] = ((
+		      /**/	       
+		      r_alpha[0]+
+		      /**/	       
+		      r_alpha[16]+
+		      /**/
+		      w_lambda[3])>0) ? 0:1;
+   /**/
+   assign estimate[7] = ((
+		      /**/	       
+		      r_alpha[8]+
+		      /**/	       
+		      r_alpha[17]+
+		      /**/
+		      w_lambda[4])>0) ? 0:1;
+   /**/
+   assign estimate[6] = ((
+		      /**/	       
+		      r_alpha[9]+
+		      /**/	       
+		      r_alpha[13]+
+		      /**/
+		      w_lambda[5])>0) ? 0:1;
+   /**/
+   assign estimate[5] = ((
+		      /**/	       
+		      r_alpha[10]+
+		      /**/	       
+		      r_alpha[22]+
+		      /**/
+		      w_lambda[6])>0) ? 0:1;
+   /**/
+   assign estimate[4] = ((
+		      /**/	       
+		      r_alpha[1]+
+		      /**/	       
+		      r_alpha[14]+
+		      /**/
+		      w_lambda[7])>0) ? 0:1;
+   /**/
+   assign estimate[3] = ((
+		      /**/	       
+		      r_alpha[2]+
+		      /**/	       
+		      r_alpha[18]+
+		      /**/
+		      w_lambda[8])>0) ? 0:1;
+   /**/
+   assign estimate[2] = ((
+		      /**/	       
+		      r_alpha[3]+
+		      /**/	       
+		      r_alpha[23]+
+		      /**/
+		      w_lambda[9])>0) ? 0:1;
+   /**/
+   assign estimate[1] = ((
+		      /**/	       
+		      r_alpha[7]+
+		      /**/	       
+		      r_alpha[15]+
+		      /**/
+		      w_lambda[10])>0) ? 0:1;
+   /**/
+   assign estimate[0] = ((
+		      /**/	       
+		      r_alpha[11]+
+		      /**/	       
+		      r_alpha[19]+
+		      /**/
+		      w_lambda[11])>0) ? 0:1;
+   /**/
+
+   //行処理が終わった時にパリティビットが1であれば出力valid信号を1とする
+   assign o_val = ( (r_state==zStateColumn) & (r_counter == 2) & (parity==1) ) ? 1:0;
+ 
+//状態遷移
+   always @(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_state <= zStateInit;
+	else if(w_trans_row | ((r_state==zStateColumn) & (r_counter == 50) & w_o_val_column))
+	  r_state <= zStateRow;
+	else if(w_trans_column)
+	  r_state <= zStateColumn;
+	else
+	  r_state <= r_state;
+     end // always (posedge clk or negedge xrst)
+   
+   //ベータの更新式
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_beta[0] <= 0;
+	else if (w_trans_row) 
+	  r_beta[0] <= w_lambda_beta[0];
+	else if ((r_state == zStateColumn) & (w_o_val_column) & (r_counter == (2)))  
+	  r_beta[0] <= w_o_data_column;
+	else
+	  r_beta[0] <= r_beta[0];
+     end // always (posedge clk or negedge xrst)
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_beta[1] <= 0;
+	else if (w_trans_row) 
+	  r_beta[1] <= w_lambda_beta[1];
+	else if ((r_state == zStateColumn) & (w_o_val_column) & (r_counter == (4)))  
+	  r_beta[1] <= w_o_data_column;
+	else
+	  r_beta[1] <= r_beta[1];
+     end // always (posedge clk or negedge xrst)
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_beta[2] <= 0;
+	else if (w_trans_row) 
+	  r_beta[2] <= w_lambda_beta[2];
+	else if ((r_state == zStateColumn) & (w_o_val_column) & (r_counter == (6)))  
+	  r_beta[2] <= w_o_data_column;
+	else
+	  r_beta[2] <= r_beta[2];
+     end // always (posedge clk or negedge xrst)
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_beta[3] <= 0;
+	else if (w_trans_row) 
+	  r_beta[3] <= w_lambda_beta[3];
+	else if ((r_state == zStateColumn) & (w_o_val_column) & (r_counter == (8)))  
+	  r_beta[3] <= w_o_data_column;
+	else
+	  r_beta[3] <= r_beta[3];
+     end // always (posedge clk or negedge xrst)
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_beta[4] <= 0;
+	else if (w_trans_row) 
+	  r_beta[4] <= w_lambda_beta[4];
+	else if ((r_state == zStateColumn) & (w_o_val_column) & (r_counter == (10)))  
+	  r_beta[4] <= w_o_data_column;
+	else
+	  r_beta[4] <= r_beta[4];
+     end // always (posedge clk or negedge xrst)
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_beta[5] <= 0;
+	else if (w_trans_row) 
+	  r_beta[5] <= w_lambda_beta[5];
+	else if ((r_state == zStateColumn) & (w_o_val_column) & (r_counter == (12)))  
+	  r_beta[5] <= w_o_data_column;
+	else
+	  r_beta[5] <= r_beta[5];
+     end // always (posedge clk or negedge xrst)
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_beta[6] <= 0;
+	else if (w_trans_row) 
+	  r_beta[6] <= w_lambda_beta[6];
+	else if ((r_state == zStateColumn) & (w_o_val_column) & (r_counter == (14)))  
+	  r_beta[6] <= w_o_data_column;
+	else
+	  r_beta[6] <= r_beta[6];
+     end // always (posedge clk or negedge xrst)
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_beta[7] <= 0;
+	else if (w_trans_row) 
+	  r_beta[7] <= w_lambda_beta[7];
+	else if ((r_state == zStateColumn) & (w_o_val_column) & (r_counter == (16)))  
+	  r_beta[7] <= w_o_data_column;
+	else
+	  r_beta[7] <= r_beta[7];
+     end // always (posedge clk or negedge xrst)
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_beta[8] <= 0;
+	else if (w_trans_row) 
+	  r_beta[8] <= w_lambda_beta[8];
+	else if ((r_state == zStateColumn) & (w_o_val_column) & (r_counter == (18)))  
+	  r_beta[8] <= w_o_data_column;
+	else
+	  r_beta[8] <= r_beta[8];
+     end // always (posedge clk or negedge xrst)
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_beta[9] <= 0;
+	else if (w_trans_row) 
+	  r_beta[9] <= w_lambda_beta[9];
+	else if ((r_state == zStateColumn) & (w_o_val_column) & (r_counter == (20)))  
+	  r_beta[9] <= w_o_data_column;
+	else
+	  r_beta[9] <= r_beta[9];
+     end // always (posedge clk or negedge xrst)
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_beta[10] <= 0;
+	else if (w_trans_row) 
+	  r_beta[10] <= w_lambda_beta[10];
+	else if ((r_state == zStateColumn) & (w_o_val_column) & (r_counter == (22)))  
+	  r_beta[10] <= w_o_data_column;
+	else
+	  r_beta[10] <= r_beta[10];
+     end // always (posedge clk or negedge xrst)
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_beta[11] <= 0;
+	else if (w_trans_row) 
+	  r_beta[11] <= w_lambda_beta[11];
+	else if ((r_state == zStateColumn) & (w_o_val_column) & (r_counter == (24)))  
+	  r_beta[11] <= w_o_data_column;
+	else
+	  r_beta[11] <= r_beta[11];
+     end // always (posedge clk or negedge xrst)
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_beta[12] <= 0;
+	else if (w_trans_row) 
+	  r_beta[12] <= w_lambda_beta[12];
+	else if ((r_state == zStateColumn) & (w_o_val_column) & (r_counter == (26)))  
+	  r_beta[12] <= w_o_data_column;
+	else
+	  r_beta[12] <= r_beta[12];
+     end // always (posedge clk or negedge xrst)
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_beta[13] <= 0;
+	else if (w_trans_row) 
+	  r_beta[13] <= w_lambda_beta[13];
+	else if ((r_state == zStateColumn) & (w_o_val_column) & (r_counter == (28)))  
+	  r_beta[13] <= w_o_data_column;
+	else
+	  r_beta[13] <= r_beta[13];
+     end // always (posedge clk or negedge xrst)
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_beta[14] <= 0;
+	else if (w_trans_row) 
+	  r_beta[14] <= w_lambda_beta[14];
+	else if ((r_state == zStateColumn) & (w_o_val_column) & (r_counter == (30)))  
+	  r_beta[14] <= w_o_data_column;
+	else
+	  r_beta[14] <= r_beta[14];
+     end // always (posedge clk or negedge xrst)
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_beta[15] <= 0;
+	else if (w_trans_row) 
+	  r_beta[15] <= w_lambda_beta[15];
+	else if ((r_state == zStateColumn) & (w_o_val_column) & (r_counter == (32)))  
+	  r_beta[15] <= w_o_data_column;
+	else
+	  r_beta[15] <= r_beta[15];
+     end // always (posedge clk or negedge xrst)
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_beta[16] <= 0;
+	else if (w_trans_row) 
+	  r_beta[16] <= w_lambda_beta[16];
+	else if ((r_state == zStateColumn) & (w_o_val_column) & (r_counter == (34)))  
+	  r_beta[16] <= w_o_data_column;
+	else
+	  r_beta[16] <= r_beta[16];
+     end // always (posedge clk or negedge xrst)
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_beta[17] <= 0;
+	else if (w_trans_row) 
+	  r_beta[17] <= w_lambda_beta[17];
+	else if ((r_state == zStateColumn) & (w_o_val_column) & (r_counter == (36)))  
+	  r_beta[17] <= w_o_data_column;
+	else
+	  r_beta[17] <= r_beta[17];
+     end // always (posedge clk or negedge xrst)
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_beta[18] <= 0;
+	else if (w_trans_row) 
+	  r_beta[18] <= w_lambda_beta[18];
+	else if ((r_state == zStateColumn) & (w_o_val_column) & (r_counter == (38)))  
+	  r_beta[18] <= w_o_data_column;
+	else
+	  r_beta[18] <= r_beta[18];
+     end // always (posedge clk or negedge xrst)
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_beta[19] <= 0;
+	else if (w_trans_row) 
+	  r_beta[19] <= w_lambda_beta[19];
+	else if ((r_state == zStateColumn) & (w_o_val_column) & (r_counter == (40)))  
+	  r_beta[19] <= w_o_data_column;
+	else
+	  r_beta[19] <= r_beta[19];
+     end // always (posedge clk or negedge xrst)
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_beta[20] <= 0;
+	else if (w_trans_row) 
+	  r_beta[20] <= w_lambda_beta[20];
+	else if ((r_state == zStateColumn) & (w_o_val_column) & (r_counter == (42)))  
+	  r_beta[20] <= w_o_data_column;
+	else
+	  r_beta[20] <= r_beta[20];
+     end // always (posedge clk or negedge xrst)
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_beta[21] <= 0;
+	else if (w_trans_row) 
+	  r_beta[21] <= w_lambda_beta[21];
+	else if ((r_state == zStateColumn) & (w_o_val_column) & (r_counter == (44)))  
+	  r_beta[21] <= w_o_data_column;
+	else
+	  r_beta[21] <= r_beta[21];
+     end // always (posedge clk or negedge xrst)
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_beta[22] <= 0;
+	else if (w_trans_row) 
+	  r_beta[22] <= w_lambda_beta[22];
+	else if ((r_state == zStateColumn) & (w_o_val_column) & (r_counter == (46)))  
+	  r_beta[22] <= w_o_data_column;
+	else
+	  r_beta[22] <= r_beta[22];
+     end // always (posedge clk or negedge xrst)
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_beta[23] <= 0;
+	else if (w_trans_row) 
+	  r_beta[23] <= w_lambda_beta[23];
+	else if ((r_state == zStateColumn) & (w_o_val_column) & (r_counter == (48)))  
+	  r_beta[23] <= w_o_data_column;
+	else
+	  r_beta[23] <= r_beta[23];
+     end // always (posedge clk or negedge xrst)
+   /**/
+    
+
+   //アルファの更新式 
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_alpha[0] <= 0;
+	else if ((r_state == zStateRow) & (w_o_val_row) & (r_counter == (3)))
+	  r_alpha[0] <= w_o_data_row;
+	else
+	  r_alpha[0] <= r_alpha[0];
+     end
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_alpha[1] <= 0;
+	else if ((r_state == zStateRow) & (w_o_val_row) & (r_counter == (6)))
+	  r_alpha[1] <= w_o_data_row;
+	else
+	  r_alpha[1] <= r_alpha[1];
+     end
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_alpha[2] <= 0;
+	else if ((r_state == zStateRow) & (w_o_val_row) & (r_counter == (9)))
+	  r_alpha[2] <= w_o_data_row;
+	else
+	  r_alpha[2] <= r_alpha[2];
+     end
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_alpha[3] <= 0;
+	else if ((r_state == zStateRow) & (w_o_val_row) & (r_counter == (12)))
+	  r_alpha[3] <= w_o_data_row;
+	else
+	  r_alpha[3] <= r_alpha[3];
+     end
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_alpha[4] <= 0;
+	else if ((r_state == zStateRow) & (w_o_val_row) & (r_counter == (15)))
+	  r_alpha[4] <= w_o_data_row;
+	else
+	  r_alpha[4] <= r_alpha[4];
+     end
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_alpha[5] <= 0;
+	else if ((r_state == zStateRow) & (w_o_val_row) & (r_counter == (18)))
+	  r_alpha[5] <= w_o_data_row;
+	else
+	  r_alpha[5] <= r_alpha[5];
+     end
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_alpha[6] <= 0;
+	else if ((r_state == zStateRow) & (w_o_val_row) & (r_counter == (21)))
+	  r_alpha[6] <= w_o_data_row;
+	else
+	  r_alpha[6] <= r_alpha[6];
+     end
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_alpha[7] <= 0;
+	else if ((r_state == zStateRow) & (w_o_val_row) & (r_counter == (24)))
+	  r_alpha[7] <= w_o_data_row;
+	else
+	  r_alpha[7] <= r_alpha[7];
+     end
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_alpha[8] <= 0;
+	else if ((r_state == zStateRow) & (w_o_val_row) & (r_counter == (27)))
+	  r_alpha[8] <= w_o_data_row;
+	else
+	  r_alpha[8] <= r_alpha[8];
+     end
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_alpha[9] <= 0;
+	else if ((r_state == zStateRow) & (w_o_val_row) & (r_counter == (30)))
+	  r_alpha[9] <= w_o_data_row;
+	else
+	  r_alpha[9] <= r_alpha[9];
+     end
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_alpha[10] <= 0;
+	else if ((r_state == zStateRow) & (w_o_val_row) & (r_counter == (33)))
+	  r_alpha[10] <= w_o_data_row;
+	else
+	  r_alpha[10] <= r_alpha[10];
+     end
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_alpha[11] <= 0;
+	else if ((r_state == zStateRow) & (w_o_val_row) & (r_counter == (36)))
+	  r_alpha[11] <= w_o_data_row;
+	else
+	  r_alpha[11] <= r_alpha[11];
+     end
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_alpha[12] <= 0;
+	else if ((r_state == zStateRow) & (w_o_val_row) & (r_counter == (39)))
+	  r_alpha[12] <= w_o_data_row;
+	else
+	  r_alpha[12] <= r_alpha[12];
+     end
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_alpha[13] <= 0;
+	else if ((r_state == zStateRow) & (w_o_val_row) & (r_counter == (42)))
+	  r_alpha[13] <= w_o_data_row;
+	else
+	  r_alpha[13] <= r_alpha[13];
+     end
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_alpha[14] <= 0;
+	else if ((r_state == zStateRow) & (w_o_val_row) & (r_counter == (45)))
+	  r_alpha[14] <= w_o_data_row;
+	else
+	  r_alpha[14] <= r_alpha[14];
+     end
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_alpha[15] <= 0;
+	else if ((r_state == zStateRow) & (w_o_val_row) & (r_counter == (48)))
+	  r_alpha[15] <= w_o_data_row;
+	else
+	  r_alpha[15] <= r_alpha[15];
+     end
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_alpha[16] <= 0;
+	else if ((r_state == zStateRow) & (w_o_val_row) & (r_counter == (51)))
+	  r_alpha[16] <= w_o_data_row;
+	else
+	  r_alpha[16] <= r_alpha[16];
+     end
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_alpha[17] <= 0;
+	else if ((r_state == zStateRow) & (w_o_val_row) & (r_counter == (54)))
+	  r_alpha[17] <= w_o_data_row;
+	else
+	  r_alpha[17] <= r_alpha[17];
+     end
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_alpha[18] <= 0;
+	else if ((r_state == zStateRow) & (w_o_val_row) & (r_counter == (57)))
+	  r_alpha[18] <= w_o_data_row;
+	else
+	  r_alpha[18] <= r_alpha[18];
+     end
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_alpha[19] <= 0;
+	else if ((r_state == zStateRow) & (w_o_val_row) & (r_counter == (60)))
+	  r_alpha[19] <= w_o_data_row;
+	else
+	  r_alpha[19] <= r_alpha[19];
+     end
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_alpha[20] <= 0;
+	else if ((r_state == zStateRow) & (w_o_val_row) & (r_counter == (63)))
+	  r_alpha[20] <= w_o_data_row;
+	else
+	  r_alpha[20] <= r_alpha[20];
+     end
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_alpha[21] <= 0;
+	else if ((r_state == zStateRow) & (w_o_val_row) & (r_counter == (66)))
+	  r_alpha[21] <= w_o_data_row;
+	else
+	  r_alpha[21] <= r_alpha[21];
+     end
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_alpha[22] <= 0;
+	else if ((r_state == zStateRow) & (w_o_val_row) & (r_counter == (69)))
+	  r_alpha[22] <= w_o_data_row;
+	else
+	  r_alpha[22] <= r_alpha[22];
+     end
+   /**/
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_alpha[23] <= 0;
+	else if ((r_state == zStateRow) & (w_o_val_row) & (r_counter == (72)))
+	  r_alpha[23] <= w_o_data_row;
+	else
+	  r_alpha[23] <= r_alpha[23];
+     end
+   /**/
+  
+   
+   //行処理の動作フラグ
+   always@(posedge clk or negedge xrst)
+     begin
+	if (!xrst)
+	  r_i_val_row <= 0;
+	else if (r_i_val_row)
+	  r_i_val_row <= 0;
+	else if (w_trans_row)
+	  r_i_val_row <= 1;
+	else if (r_state == zStateRow & w_o_val_row)
+	  r_i_val_row <= 1;
+	else
+	  r_i_val_row <= r_i_val_row;
+     end // always (posedge clk or negedge xrst)
+   //カウンタ
+   always@(posedge clk or negedge xrst)
+     begin
+	if (!xrst)
+	  r_counter <= 0;
+	else if (r_state == zStateRow & w_o_val_row)
+	  begin
+	     if (r_counter == 74)
+	       r_counter <= 0;
+	     else
+	       r_counter <= r_counter + 1;
+	  end
+	else if (r_state == zStateColumn & w_o_val_column)
+	  begin
+	     if (r_counter == 50)
+	       r_counter <=0;
+	     else
+	       r_counter <= r_counter + 1;
+	  end
+	else
+	  r_counter <= r_counter;
+     end // always@ (posedge clk or negedge xrst)
+
+   //行処理の値の初期化
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  i_init_row <= 0;
+	else if (i_init_row == 2)
+	  i_init_row <=0;
+	else
+	  i_init_row <= i_init_row+1;
+     end
+
+   //列処理の値の初期化
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  i_init_column <= 0;
+	else if (i_init_column == 1)
+	  i_init_column <=0;
+	else
+	  i_init_column <= i_init_column+1;
+     end
+
+   //繰り返し回数の更新
+   always@(posedge clk or negedge xrst)
+     begin
+	if(!xrst)
+	  r_loop <= 0;
+	else if (w_trans_column)
+	  r_loop <=r_loop+1;
+	else
+	  r_loop <= r_loop;
+     end
+
+   row row(
+	   .i_data (w_i_data_row[31:0]),
+	   .i_val (i_val),
+	   .o_data (w_o_data_row[31:0]),
+	   .o_val (w_o_val_row),
+	   .clk (clk),
+	   .xrst (xrst),
+	   .i_init (i_init_row [2:0])
+	   );
+   add add(
+	   .i_data (w_i_data_column[31:0]),
+	   .i_val (i_val),
+	   .o_data (w_o_data_column[31:0]),
+	   .o_val (w_o_val_column),
+	   .clk (clk),
+	   .xrst (xrst),
+	   .i_init (i_init_column[2:0])
+	   );
+endmodule
+   
+	   
+   
+   
+   
+
+   

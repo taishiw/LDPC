@@ -1,0 +1,8 @@
+module add(alphapath,lampath,i_val,clk,xrst);
+   input [31:0] alphapath;
+   input [31:0] lampath;
+   input i_val,clk,xrst;
+   output [31:0] betapath;
+   assign betapath=alphapath+lampath;
+endmodule
+   

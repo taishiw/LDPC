@@ -1,0 +1,22 @@
+# vsim -do {run -all ; exit } -c test_test 
+# //  ModelSim SE-64 10.2c Jul 18 2013 Linux 4.10.13-20170428-diskless-01+
+# //
+# //  Copyright 1991-2013 Mentor Graphics Corporation
+# //  All Rights Reserved.
+# //
+# //  THIS WORK CONTAINS TRADE SECRET AND PROPRIETARY INFORMATION
+# //  WHICH IS THE PROPERTY OF MENTOR GRAPHICS CORPORATION OR ITS
+# //  LICENSORS AND IS SUBJECT TO LICENSE TERMS.
+# //
+# Loading work.test_test(fast)
+# Loading work.ctrl(fast)
+# Loading work.row(fast)
+# Loading work.add(fast)
+# Loading work.sram_lambda(fast)
+# Loading work.sram(fast)
+# ** Warning: (vsim-3015) test_test.v(837): [PCDPC] - Port size (200 or 200) does not match connection size (400) for port 'estimate'. The port definition is at: Ctrl.v(7).
+#         Region: /test_test/ctrl
+# run -all  
+# Break in Module test_test at test_test.v line 846
+# Stopped at test_test.v line 846 
+#  exit  

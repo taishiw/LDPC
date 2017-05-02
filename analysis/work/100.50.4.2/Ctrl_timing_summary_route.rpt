@@ -1,0 +1,95 @@
+Copyright 1986-2014 Xilinx, Inc. All Rights Reserved.
+-----------------------------------------------------------------------------------------
+| Tool Version      : Vivado v.2014.4 (lin64) Build 1071353 Tue Nov 18 16:47:07 MST 2014
+| Date              : Sat Apr 29 14:52:08 2017
+| Host              : shirasu running 64-bit Debian GNU/Linux 8.7 (jessie)
+| Command           : report_timing -file work/Ctrl_timing_summary_route.rpt
+| Design            : ctrl
+| Device            : 7v2000t-flg1925
+| Speed File        : -1  PRODUCTION 1.10 2014-09-11
+| Temperature Grade : C
+-----------------------------------------------------------------------------------------
+
+Timing Report
+
+Slack (MET) :             0.755ns  (required time - arrival time)
+  Source:                 r_counter_reg[5]_rep__0/C
+                            (rising edge-triggered cell FDCE clocked by clk  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            add/o_data_reg[13]/D
+                            (rising edge-triggered cell FDRE clocked by clk  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             clk
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            10.000ns  (clk rise@10.000ns - clk rise@0.000ns)
+  Data Path Delay:        9.080ns  (logic 1.308ns (14.406%)  route 7.772ns (85.594%))
+  Logic Levels:           11  (CARRY4=3 LUT3=2 LUT6=6)
+  Clock Path Skew:        -0.214ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    4.294ns = ( 14.294 - 10.000 ) 
+    Source Clock Delay      (SCD):    4.741ns
+    Clock Pessimism Removal (CPR):    0.234ns
+  Clock Uncertainty:      0.035ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk rise edge)        0.000     0.000 r  
+    AU32                                              0.000     0.000 r  clk
+                         net (fo=0)                   0.000     0.000    clk
+    AU32                 IBUF (Prop_ibuf_I_O)         0.858     0.858 r  clk_IBUF_inst/O
+                         net (fo=1, routed)           1.904     2.762    clk_IBUF
+    BUFGCTRL_X0Y48       BUFG (Prop_bufg_I_O)         0.120     2.882 r  clk_IBUF_BUFG_inst/O
+                         net (fo=211, routed)         1.859     4.741    clk_IBUF_BUFG
+    SLICE_X419Y192                                                    r  r_counter_reg[5]_rep__0/C
+  -------------------------------------------------------------------    -------------------
+    SLICE_X419Y192       FDCE (Prop_fdce_C_Q)         0.269     5.010 f  r_counter_reg[5]_rep__0/Q
+                         net (fo=121, routed)         1.306     6.316    add/I144
+    SLICE_X445Y191       LUT3 (Prop_lut3_I1_O)        0.063     6.379 f  add/estimate[5]_i_4/O
+                         net (fo=57, routed)          0.909     7.288    sramlambda/I908
+    SLICE_X436Y192       LUT6 (Prop_lut6_I0_O)        0.170     7.458 r  sramlambda/mem_reg_i_345/O
+                         net (fo=5, routed)           0.892     8.350    add/i_waddr_beta137
+    SLICE_X440Y201       LUT6 (Prop_lut6_I3_O)        0.053     8.403 r  add/o_data[15]_i_187/O
+                         net (fo=14, routed)          1.302     9.705    add/O531
+    SLICE_X463Y209       LUT6 (Prop_lut6_I0_O)        0.053     9.758 f  add/o_data[15]_i_145/O
+                         net (fo=5, routed)           0.862    10.621    add/O466
+    SLICE_X453Y207       LUT3 (Prop_lut3_I0_O)        0.053    10.674 f  add/o_data[15]_i_36/O
+                         net (fo=26, routed)          0.471    11.145    add/O465
+    SLICE_X449Y205       LUT6 (Prop_lut6_I4_O)        0.053    11.198 r  add/o_data[15]_i_58/O
+                         net (fo=16, routed)          0.994    12.191    sramalpha/I300
+    SLICE_X431Y202       LUT6 (Prop_lut6_I0_O)        0.053    12.244 r  sramalpha/o_data[7]_i_11/O
+                         net (fo=1, routed)           1.035    13.280    add/I207
+    SLICE_X456Y201       LUT6 (Prop_lut6_I2_O)        0.053    13.333 r  add/o_data[7]_i_6/O
+                         net (fo=1, routed)           0.000    13.333    add/n_0_o_data[7]_i_6
+    SLICE_X456Y201       CARRY4 (Prop_carry4_S[3]_CO[3])
+                                                      0.216    13.549 r  add/o_data_reg[7]_i_1/CO[3]
+                         net (fo=1, routed)           0.000    13.549    add/n_0_o_data_reg[7]_i_1
+    SLICE_X456Y202       CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.060    13.609 r  add/o_data_reg[11]_i_1/CO[3]
+                         net (fo=1, routed)           0.000    13.609    add/n_0_o_data_reg[11]_i_1
+    SLICE_X456Y203       CARRY4 (Prop_carry4_CI_O[1])
+                                                      0.212    13.821 r  add/o_data_reg[15]_i_2/O[1]
+                         net (fo=1, routed)           0.000    13.821    add/n_6_o_data_reg[15]_i_2
+    SLICE_X456Y203       FDRE                                         r  add/o_data_reg[13]/D
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk rise edge)       10.000    10.000 r  
+    AU32                                              0.000    10.000 r  clk
+                         net (fo=0)                   0.000    10.000    clk
+    AU32                 IBUF (Prop_ibuf_I_O)         0.732    10.732 r  clk_IBUF_inst/O
+                         net (fo=1, routed)           1.814    12.546    clk_IBUF
+    BUFGCTRL_X0Y48       BUFG (Prop_bufg_I_O)         0.113    12.659 r  clk_IBUF_BUFG_inst/O
+                         net (fo=211, routed)         1.635    14.294    add/clk_IBUF_BUFG
+    SLICE_X456Y203                                                    r  add/o_data_reg[13]/C
+                         clock pessimism              0.234    14.527    
+                         clock uncertainty           -0.035    14.492    
+    SLICE_X456Y203       FDRE (Setup_fdre_C_D)        0.084    14.576    add/o_data_reg[13]
+  -------------------------------------------------------------------
+                         required time                         14.576    
+                         arrival time                         -13.821    
+  -------------------------------------------------------------------
+                         slack                                  0.755    
+
+
+
+

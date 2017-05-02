@@ -1,0 +1,91 @@
+
+module row(beta,i_val,clk,xrst,alpha);
+   input [383:0] beta;
+   input 	 i_val,clk,xrst;
+   output [383:0] 	  alpha;
+
+   reg [383:0] 		  alpha;		  
+   reg [31:0] 	 betapath1,betapath2;
+   wire [31:0] 	 minpath,abspath1,abspath2;
+   wire 	 exorpath;
+   always @ (posedge clk)
+     begin
+	if(i_val)begin
+	betapath1<=beta[351:320];
+	betapath2<=beta[319:288];
+	alpha[383:352]<=(!exorpath)?minpath:-(minpath+1);//alpha0
+	@ (posedge clk);
+	betapath1<=beta[319:288];
+	betapath2<=beta[383:352];
+	alpha[351:320]<=(!exorpath)?minpath:-(minpath+1);//alpha1
+	@ (posedge clk);
+	betapath1<=beta[351:320];
+	betapath2<=beta[383:352];
+	alpha[319:288]<=(!exorpath)?minpath:-(minpath+1);//alpha2
+	@ (posedge clk);
+	betapath1<=beta[255:224];
+	betapath2<=beta[223:192];
+	alpha[287:256]<=(!exorpath)?minpath:-(minpath+1);//alpha3
+	@ (posedge clk);
+	betapath1<=beta[287:256];
+	betapath2<=beta[223:192];
+	alpha[255:224]<=(!exorpath)?minpath:-(minpath+1);//alpha4
+	@ (posedge clk);
+	betapath1<=beta[287:256];
+	betapath2<=beta[255:224];
+	alpha[223:192]<=(!exorpath)?minpath:-(minpath+1);//alpha5
+	@ (posedge clk);
+	betapath1<=beta[159:128];
+	betapath2<=beta[127:96];
+	alpha[191:160]<=(!exorpath)?minpath:-(minpath+1);//alpha6
+	@ (posedge clk);
+	betapath1<=beta[191:160];
+	betapath2<=beta[127:96];
+	alpha[159:128]<=(!exorpath)?minpath:-(minpath+1);//alpha7
+	@ (posedge clk);
+	betapath1<=beta[191:160];
+	betapath2<=beta[159:128];
+	alpha[127:96]<=(!exorpath)?minpath:-(minpath+1);//alpha8
+	@ (posedge clk);
+	betapath1<=beta[63:32];
+	betapath2<=beta[31:0];
+	alpha[95:64]<=(!exorpath)?minpath:-(minpath+1);//alpha9
+	@ (posedge clk);
+	betapath1<=beta[95:64];
+	betapath2<=beta[31:0];
+	alpha[63:32]<=(!exorpath)?minpath:-(minpath+1);//alpha10
+	@ (posedge clk);
+	betapath1<=beta[95:64];
+	betapath2<=beta[63:32];
+	alpha[31:0]<=(!exorpath)?minpath:-(minpath+1);//alpha11
+	@ (posedge clk);
+	   end
+     end
+
+abs abs(
+	.betapath1(betapath1[31:0]),
+	.betapath2(betapath2[31:0]),	
+	.i_val(i_val),
+	.clk(clk),
+	.xrst(xrst),
+	.abspath1(abspath1[31:0]),
+	.abspath2(abspath2[31:0])
+	);
+min min(
+	.abspath1(abspath1[31:0]),
+	.abspath2(abspath2[31:0]),
+	.i_val(i_val),
+	.clk(clk),
+	.xrst(xrst),
+	.minpath(minpath[31:0])
+	);
+exor exor(
+	  .betapath1(betapath1[31:0]),
+	  .betapath2(betapath2[31:0]),	
+	  .i_val(i_val),
+	  .clk(clk),
+	  .xrst(xrst),
+	  .exorpath(exorpath)
+	);
+	  
+endmodule // row
